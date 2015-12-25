@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Contacts>
+    <Contact imei="1">
+        <name>¿¿¿</name>
+        <age>15889970648</age>
+    </Contact>
+	
+	<Contact imei="2">
+        <name>„¢µÂÈA</name>
+        <age>15889970649</age>
+    </Contact>
+	
+	<Contact imei="3">
+        <name>ˆŒWÓÑ</name>
+        <age>15889970650</age>
+    </Contact>
+	
+	<Contact imei="4">
+        <name>ÀèÃ÷</name>
+        <age>15889970651</age>
+    </Contact>
+</Contacts>
