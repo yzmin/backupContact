@@ -1,5 +1,5 @@
 backupcontact : mytinyxmlparse.o contacts.o
-	@g++  mytinyxmlparse.o contacts.o sql_con.cpp -Isrc -Lsrc -ltinyxml -o backupcontact -lsqlite3 -lfcgi
+	@g++  mytinyxmlparse.o contacts.o contact_con.cpp -Isrc -Lsrc -ltinyxml -o backupcontact -lsqlite3 -lfcgi
 
 #test : mytinyxmlparse.o contacts.o
 #	@g++  mytinyxmlparse.o contacts.o test.cpp -Isrc -Lsrc -ltinyxml -o test
