@@ -3,12 +3,13 @@
 
 using namespace std;
 
-class Contacts 
+class Contacts
 {
 public:
 	Contacts();
 	~Contacts();
 public:
+	string id;
 	string imei;
 	string name;
 	string phone;

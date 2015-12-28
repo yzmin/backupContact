@@ -1,8 +1,16 @@
 #include "mytinyxmlparse.h"
 
+vector<Contacts*> *contacts;
+char sqlselect[] = "select * from Contact";
+
 MyTinyXmlParse::MyTinyXmlParse()
 {
 	
+}
+
+MyTinyXmlParse::MyTinyXmlParse(sqlite3 *db)
+{
+		this->db = db;
 }
 
 MyTinyXmlParse::~MyTinyXmlParse()
@@ -10,30 +18,54 @@ MyTinyXmlParse::~MyTinyXmlParse()
 		
 }
 
-
-bool MyTinyXmlParse::ReadXmlParser(string& szFileName)
+int MyTinyXmlParse::insertData(Contacts *contact)
 {
-	//¶ÁÈ¡XmlÎÄ¼ş£¬²¢±éÀú
+        char *errmsg = NULL;
+        int res;
+        char sql[1024] = {0};
+
+
+#if 1
+        sprintf(sql, "insert into Contact(name,phoneNumber) values ('%s','%s')",(contact->name).c_str(),(contact->phone).c_str());
+
+        res = sqlite3_exec(this->db,sql , NULL, NULL, &errmsg);
+        if (res != SQLITE_OK)
+        {
+                printf("é”™è¯¯ç ï¼š%d  é”™è¯¯ä¿¡æ¯ï¼š%s\n", res, errmsg);
+                return -1;
+        }
+#endif
+       return 0;
+}
+
+
+
+
+bool MyTinyXmlParse::readXmlParser(string& szFileName)
+{
+	//printf("MyTinyXmlParse::filename : %s\n",szFileName.c_str());
+	//è¯»å–Xmlæ–‡ä»¶ï¼Œå¹¶éå†
 	try
 	{
-		vector<Contacts> contacts;
+		vector<Contacts*> contacts;
 
-		//´´½¨Ò»¸öXMLµÄÎÄµµ¶ÔÏó¡£  
+		//åˆ›å»ºä¸€ä¸ªXMLçš„æ–‡æ¡£å¯¹è±¡ã€‚  
 		TiXmlDocument *myDocument = new TiXmlDocument(szFileName.c_str());
 		myDocument->LoadFile();
 
-		//»ñµÃ¸ùÔªËØ£¬¼´Persons¡£  
+		//è·å¾—æ ¹å…ƒç´ ï¼Œå³Personsã€‚  
 		TiXmlElement *RootElement = myDocument->RootElement();
 
 
-		//Êä³ö¸ùÔªËØÃû³Æ£¬¼´Êä³öPersons¡£  
-		cout << RootElement->Value() << endl;
+		//è¾“å‡ºæ ¹å…ƒç´ åç§°ï¼Œå³è¾“å‡ºPersonsã€‚
+		//printf("%s\n",RootElement->Value());
+
 		TiXmlElement *FirstPerson = RootElement->FirstChildElement();
 
-		for (TiXmlNode *contactNode = RootElement->FirstChild("Contact"); contactNode; contactNode = contactNode->NextSibling("Contact"))
+		for (TiXmlNode *contactNode = RootElement->FirstChild("contact"); contactNode; contactNode = contactNode->NextSibling("contact"))
 		{
 			Contacts *contact = new Contacts;
-			TiXmlAttribute* attributeOfImei = FirstPerson->FirstAttribute();  //»ñµÃstudentµÄnameÊôĞÔ
+			TiXmlAttribute* attributeOfImei = FirstPerson->FirstAttribute();  //è·å¾—studentçš„nameå±æ€§
 			while (attributeOfImei) {
 				contact->imei = attributeOfImei->Value();
 				//cout << attributeOfImei->Name() << " : " << attributeOfImei->Value() << endl;
@@ -49,14 +81,14 @@ bool MyTinyXmlParse::ReadXmlParser(string& szFileName)
 			//cout << child->ToElement()->GetText() << endl;
 			contact->phone = child->ToElement()->GetText();
 
-			contacts.push_back(*contact);
+			contacts.push_back(contact);
 		}	
 
-		for (vector<Contacts>::iterator it = contacts.begin(); it != contacts.end(); it++)
+		for (vector<Contacts *>::iterator it = contacts.begin(); it != contacts.end(); it++)
 		{
-			cout << it->imei << endl;
-			cout << it->name << endl;
-			cout << it->phone << endl;
+			Contacts *contact = *it;
+			//printf("name = %s ,phone = %s\n",(contact->name).c_str(),(contact->phone).c_str());
+			this->insertData(contact);
 		}
 	}
 	catch (string& e)
@@ -67,42 +99,93 @@ bool MyTinyXmlParse::ReadXmlParser(string& szFileName)
 }
 
 
-bool MyTinyXmlParse::MakeXmlFile(string& szFileName)
+
+int callback(void *para, int n_column, char **column_value, char **column_name)
 {
-	//´´½¨xmlÎÄ¼ş£¬szFilePathÎªÎÄ¼ş±£´æµÄÂ·¾¶£¬Èô´´½¨³É¹¦·µ»Øtrue ·ñÔòfalse
+	
+#if 1
+	Contacts *contact = new Contacts;
+	contact->id = column_value[0];
+	contact->name = column_value[1];
+	contact->phone = column_value[2];
+	contacts->push_back(contact);
+#else
+	int i;//3
+	for (i = 1; i < n_column; ++i)
+	{
+		printf("%s ï¼š%s\n", column_name[i], column_value[i]);
+	}
+#endif
+
+	return 0;
+}
+
+int selectData(sqlite3 *db,char *sql)
+{
+	contacts = new vector<Contacts*>;
+	
+	char *errmsg;
+	int res = sqlite3_exec(db, sql, callback, NULL, &errmsg);
+	if (res != SQLITE_OK)
+	{
+		printf("æŸ¥è¯¢å¤±è´¥ï¼Œé”™è¯¯ç ï¼š%dï¼Œé”™è¯¯åŸå› ï¼š%s\n", res, errmsg);
+		return -1;
+	}
+	return 0;
+}
+
+
+bool MyTinyXmlParse::makeXmlFile(string& szFileName)
+{
+	//æŸ¥è¯¢æ•°æ®åº“
+	selectData(this->db,sqlselect);
+	//åˆ›å»ºxmlæ–‡ä»¶ï¼ŒszFilePathä¸ºæ–‡ä»¶ä¿å­˜çš„è·¯å¾„ï¼Œè‹¥åˆ›å»ºæˆåŠŸè¿”å›true å¦åˆ™false
 	try
 	{
-		//´´½¨Ò»¸öXMLµÄÎÄµµ¶ÔÏó¡£  
+		//åˆ›å»ºä¸€ä¸ªXMLçš„æ–‡æ¡£å¯¹è±¡ã€‚  
 		TiXmlDocument *myDocument = new TiXmlDocument();
+		//æè¿°
+		TiXmlDeclaration *decl = new TiXmlDeclaration("1.0", "utf-8", "");  
+		myDocument->LinkEndChild(decl);
 
-		//´´½¨Ò»¸ö¸ùÔªËØ²¢Á¬½Ó¡£  
+		//åˆ›å»ºä¸€ä¸ªæ ¹å…ƒç´ å¹¶è¿æ¥ã€‚  
 		TiXmlElement *RootElement = new TiXmlElement("Contacts");
 		myDocument->LinkEndChild(RootElement);
 
-		//´´½¨Ò»¸öPersonÔªËØ²¢Á¬½Ó¡£  
-		TiXmlElement *PersonElement = new TiXmlElement("Contact");
-		RootElement->LinkEndChild(PersonElement);
+		
+		
+		for (vector<Contacts *>::iterator it = contacts->begin(); it != contacts->end(); it++)
+		{
+			Contacts *contact = *it;
+			
+			//åˆ›å»ºä¸€ä¸ªContactå…ƒç´ å¹¶è¿æ¥ã€‚
+			TiXmlElement *PersonElement = new TiXmlElement("Contact");
+			RootElement->LinkEndChild(PersonElement);
 
-		//ÉèÖÃPersonÔªËØµÄÊôĞÔ¡£  
-		PersonElement->SetAttribute("ID", "1");
+			//è®¾ç½®Contactå…ƒç´ çš„å±æ€§ã€‚  
+			PersonElement->SetAttribute("ID", (contact->id).c_str());
 
-		//´´½¨nameÔªËØ¡¢ageÔªËØ²¢Á¬½Ó¡£  
-		TiXmlElement *NameElement = new TiXmlElement("name");
-		TiXmlElement *AgeElement = new TiXmlElement("phone");
-		PersonElement->LinkEndChild(NameElement);
-		PersonElement->LinkEndChild(AgeElement);
+			//åˆ›å»ºnameå…ƒç´ ã€ageå…ƒç´ å¹¶è¿æ¥ã€‚  
+			TiXmlElement *NameElement = new TiXmlElement("name");
+			TiXmlElement *AgeElement = new TiXmlElement("phone");
+			PersonElement->LinkEndChild(NameElement);
+			PersonElement->LinkEndChild(AgeElement);
 
-		//ÉèÖÃnameÔªËØºÍageÔªËØµÄÄÚÈİ²¢Á¬½Ó¡£  
-		TiXmlText *NameContent = new TiXmlText("ÖÜĞÇĞÇ");
-		TiXmlText *AgeContent = new TiXmlText("22");
-		NameElement->LinkEndChild(NameContent);
-		AgeElement->LinkEndChild(AgeContent);
+			//è®¾ç½®nameå…ƒç´ å’Œageå…ƒç´ çš„å†…å®¹å¹¶è¿æ¥ã€‚  
+			TiXmlText *NameContent = new TiXmlText((contact->name).c_str());
+			TiXmlText *AgeContent = new TiXmlText((contact->phone).c_str());
+			NameElement->LinkEndChild(NameContent);
+			AgeElement->LinkEndChild(AgeContent);
+		}
 
-		myDocument->SaveFile(szFileName.c_str());//±£´æµ½ÎÄ¼ş  
+		myDocument->SaveFile(szFileName.c_str());//ä¿å­˜åˆ°æ–‡ä»¶
+		
 	}
 	catch (string& e)
 	{
 		return false;
 	}
+	
+	delete contacts;
 	return true;
 }
