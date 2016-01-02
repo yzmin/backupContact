@@ -14,6 +14,11 @@ backupContact通讯录备份服务
 2、安装fastCGI 服务
 3、执行./start.sh 对程序进行编译运行
 
+注意：libtinyxml.so 库的使用
+在backupContact目录下设置临时指定的链接库
+$ echo $LD_LIBRARY_PATH
+$ export LD_LIBRARY_PATH=./src
+
 
 ContactDB目录为数据库存储路径
 
