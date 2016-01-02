@@ -1,0 +1,20 @@
+backupContact通讯录备份服务
+采用fastCGI
+
+部署：
+1、借助于Nginx web服务器 反向代理
+	location = /backupcontact.cgi {
+                charset utf-8;
+                root /usr/local/nginx/fastcgi_temp/backupContact;
+                fastcgi_pass 127.0.0.1:8030;
+                fastcgi_index index.cgi;
+                include fastcgi_params;
+	}
+
+2、安装fastCGI 服务
+3、执行./start.sh 对程序进行编译运行
+
+
+ContactDB目录为数据库存储路径
+
+采用tinyxml方式解析和sqlite3数据库
